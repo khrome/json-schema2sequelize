@@ -17,9 +17,9 @@ const fieldSequelize = (f)=>{
     let field = f || {};
     return `{
 type: DataTypes.${field.sequelizeType},${
-(field.serial && "\n    "+'autoIncrement: true,') || ''
+(field.serial && "\n"+'autoIncrement: true,') || ''
 }${
-(field.primaryKey && "\n    "+'primaryKey: true,') || ''
+(field.primaryKey && "\n"+'primaryKey: true,') || ''
 }
 allowNull : ${field.canBeNull?'true':'false'}
 }`;
@@ -66,17 +66,16 @@ const util = {
         let options = opts || {};
         let table = util.toSequelizeParts(name, schema, opts);
         let capName = name.substring(0,1).toUpperCase()+name.substring(1);
+        let serializeKeyword = 'SERIAL'
         let model = table.fields.reduce((agg, field)=>{
-            agg.push(`${field.name}: {
-    type: DataTypes.${field.sequelizeType},${
-        (field.serial && "\n    "+'autoIncrement: true,') || ''
-    }${
-        (field.serial && "\n    "+'autoIncrement: true,') || ''
-    }
-    allowNull : ${field.canBeNull?'true':'false'}
-}`);
+            let isPrimaryKey = (options.primaryKey && field.name === options.primaryKey);
+            if(isPrimaryKey){
+                field.primaryKey = isPrimaryKey;
+                if(options.serial) field.serial = true;
+            }
+            agg.push(`${field.name}: ${fieldSequelize(field).replace(/\n/g, "\n    ").replace('    }', '}')}`);
             return agg;
-        }, []).join("\n").replace(/\n/g, "\n    ");
+        }, []).join(",\n").replace(/\n/g, "\n    ");
         let classDef = null;
         if(!options.define){
             classDef = `class ${capName} extends Model {}
